@@ -1,8 +1,0 @@
-/Users/alexandremachado/Projects-2025/audio/separator/src-tauri/target/release/deps/serde_with_macros-123f9d0194ca2d7b.d: /Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/lib.rs /Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/apply.rs /Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/lazy_bool.rs /Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/utils.rs
-
-/Users/alexandremachado/Projects-2025/audio/separator/src-tauri/target/release/deps/libserde_with_macros-123f9d0194ca2d7b.dylib: /Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/lib.rs /Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/apply.rs /Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/lazy_bool.rs /Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/utils.rs
-
-/Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/lib.rs:
-/Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/apply.rs:
-/Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/lazy_bool.rs:
-/Users/alexandremachado/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_with_macros-3.14.1/src/utils.rs:
