@@ -1,0 +1,1 @@
+tauri::Builder<tauri_runtime_wry::Wry<EventLoopMessage>>
