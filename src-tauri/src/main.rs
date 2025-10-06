@@ -29,18 +29,25 @@ async fn start_python_backend() -> Result<String, String> {
     }
 
     // Start the Python backend
-    let backend_path = std::env::current_exe()
-        .unwrap()
+    let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let project_root = manifest_dir
         .parent()
-        .unwrap()
-        .join("..")
-        .join("py-backend")
-        .join("main.py");
+        .ok_or_else(|| "Failed to resolve project root".to_string())?
+        .to_path_buf();
+    let backend_path = project_root.join("py-backend").join("main.py");
+
+    if !backend_path.exists() {
+        return Err(format!(
+            "Python backend script not found at {:?}",
+            backend_path
+        ));
+    }
 
     println!("Starting Python backend at: {:?}", backend_path);
 
-    match std::process::Command::new("python3")
+    match Command::new("python3")
         .arg(&backend_path)
+        .current_dir(&project_root)
         .spawn()
     {
         Ok(child) => {

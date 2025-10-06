@@ -47,12 +47,12 @@ export function ProgressDisplay({ task }: ProgressDisplayProps) {
       <Progress value={task.progress * 100} className="w-full" />
 
       <div className="text-sm text-muted-foreground">
-        {task.current_step || 'Initializing...'}
+        {task.currentStep || 'Initializing...'}
       </div>
 
-      {task.error && (
+      {task.errorMessage && (
         <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950 p-3 rounded">
-          {task.error}
+          {task.errorMessage}
         </div>
       )}
 

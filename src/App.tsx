@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import { invoke } from '@tauri-apps/api/tauri'
-import { open } from '@tauri-apps/api/dialog'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
-import { Progress } from './components/ui/progress'
-import { Badge } from './components/ui/badge'
 import { Separator } from './components/ui/separator'
 import { ThemeToggle } from './components/theme-toggle'
 import { FileUpload } from './components/file-upload'
@@ -28,10 +25,30 @@ export interface SeparationTask {
   outputDir: string
   stems: number
   outputFiles?: string[]
-  error?: string
+  currentStep?: string
+  etaSeconds?: number
+  errorMessage?: string
   startTime?: Date
   endTime?: Date
 }
+
+export interface SeparationStatusPayload {
+  status: 'processing' | 'completed' | 'error'
+  progress: number
+  current_step: string
+  eta_seconds?: number
+  error_message?: string
+}
+
+export const adaptSeparationStatus = (
+  status: SeparationStatusPayload
+): Pick<SeparationTask, 'status' | 'progress' | 'currentStep' | 'etaSeconds' | 'errorMessage'> => ({
+  status: status.status,
+  progress: status.progress,
+  currentStep: status.current_step,
+  etaSeconds: status.eta_seconds,
+  errorMessage: status.error_message
+})
 
 function App() {
   const [selectedFile, setSelectedFile] = useState<AudioFile | null>(null)
@@ -59,7 +76,8 @@ function App() {
       progress: 0,
       inputFile: selectedFile,
       outputDir,
-      stems: selectedStems
+      stems: selectedStems,
+      currentStep: 'Initializing separator...'
     })
 
     try {
@@ -77,7 +95,7 @@ function App() {
       setCurrentTask(prev => prev ? {
         ...prev,
         status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        errorMessage: error instanceof Error ? error.message : 'Unknown error'
       } : null)
     } finally {
       setIsProcessing(false)
