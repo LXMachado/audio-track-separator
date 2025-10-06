@@ -1,4 +1,15 @@
 {
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "build": {
+    "beforeDevCommand": "npm run dev:ui",
+    "beforeBuildCommand": "npm run build:frontend",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "Spleeter Studio",
+    "version": "0.1.0"
+  },
   "tauri": {
     "allowlist": {
       "all": false,

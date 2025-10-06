@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/tauri'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
@@ -57,6 +57,39 @@ function App() {
   const [currentTask, setCurrentTask] = useState<SeparationTask | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [backendStatus, setBackendStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
+
+  useEffect(() => {
+    let isMounted = true
+
+    const ensureBackendRunning = async () => {
+      setBackendStatus('connecting')
+
+      try {
+        await invoke('check_python_backend_status')
+        if (!isMounted) return
+        setBackendStatus('connected')
+        return
+      } catch (error) {
+        console.info('Backend not running, attempting to start it.', error)
+      }
+
+      try {
+        await invoke('start_python_backend')
+        if (!isMounted) return
+        setBackendStatus('connected')
+      } catch (error) {
+        console.error('Failed to start Python backend:', error)
+        if (!isMounted) return
+        setBackendStatus('disconnected')
+      }
+    }
+
+    ensureBackendRunning()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const handleFileSelect = (file: AudioFile) => {
     setSelectedFile(file)
