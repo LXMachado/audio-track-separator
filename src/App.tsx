@@ -9,6 +9,7 @@ import { StemSelector } from './components/stem-selector'
 import { OutputSelector } from './components/output-selector'
 import { ProgressDisplay } from './components/progress-display'
 import { StatusBar } from './components/status-bar'
+import { AudioPlayer } from './components/audio-player'
 
 export interface AudioFile {
   name: string
@@ -170,6 +171,8 @@ function App() {
                 />
               </CardContent>
             </Card>
+
+            <AudioPlayer file={selectedFile} />
 
             {/* Settings */}
             <Card>
