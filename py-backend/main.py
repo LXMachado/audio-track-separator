@@ -33,6 +33,7 @@ class SeparationStatus(BaseModel):
     current_step: str
     eta_seconds: Optional[int] = None
     error_message: Optional[str] = None
+    output_files: Optional[List[str]] = None
 
 class SeparationResult(BaseModel):
     success: bool
@@ -151,7 +152,8 @@ async def separate_audio_task(
             separation_status[task_id] = SeparationStatus(
                 status="completed",
                 progress=1.0,
-                current_step="Demo separation completed!"
+                current_step="Demo separation completed!",
+                output_files=output_files
             )
 
             return SeparationResult(
@@ -233,7 +235,8 @@ async def separate_audio_task(
             separation_status[task_id] = SeparationStatus(
                 status="completed",
                 progress=1.0,
-                current_step="Separation completed!"
+                current_step="Separation completed!",
+                output_files=output_files
             )
 
             return SeparationResult(
@@ -248,7 +251,8 @@ async def separate_audio_task(
             status="error",
             progress=0.0,
             current_step="Error occurred",
-            error_message=error_message
+            error_message=error_message,
+            output_files=[]
         )
 
         return SeparationResult(
@@ -296,6 +300,12 @@ async def separate_audio(request: SeparationRequest, background_tasks: Backgroun
 
     # Create task ID
     task_id = f"sep_{int(datetime.now().timestamp())}_{os.path.basename(request.input_path)}"
+
+    separation_status[task_id] = SeparationStatus(
+        status="processing",
+        progress=0.0,
+        current_step="Task queued..."
+    )
 
     # Start background task
     background_tasks.add_task(

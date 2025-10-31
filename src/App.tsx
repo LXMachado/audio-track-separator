@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/tauri'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
@@ -10,6 +10,8 @@ import { OutputSelector } from './components/output-selector'
 import { ProgressDisplay } from './components/progress-display'
 import { StatusBar } from './components/status-bar'
 import { AudioPlayer } from './components/audio-player'
+
+const BACKEND_BASE_URL = 'http://127.0.0.1:8080'
 
 export interface AudioFile {
   name: string
@@ -39,16 +41,18 @@ export interface SeparationStatusPayload {
   current_step: string
   eta_seconds?: number
   error_message?: string
+  output_files?: string[]
 }
 
 export const adaptSeparationStatus = (
   status: SeparationStatusPayload
-): Pick<SeparationTask, 'status' | 'progress' | 'currentStep' | 'etaSeconds' | 'errorMessage'> => ({
+): Pick<SeparationTask, 'status' | 'progress' | 'currentStep' | 'etaSeconds' | 'errorMessage' | 'outputFiles'> => ({
   status: status.status,
   progress: status.progress,
   currentStep: status.current_step,
   etaSeconds: status.eta_seconds,
-  errorMessage: status.error_message
+  errorMessage: status.error_message,
+  outputFiles: status.output_files
 })
 
 function App() {
@@ -58,39 +62,119 @@ function App() {
   const [currentTask, setCurrentTask] = useState<SeparationTask | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [backendStatus, setBackendStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  useEffect(() => {
-    let isMounted = true
-
-    const ensureBackendRunning = async () => {
-      setBackendStatus('connecting')
-
-      try {
-        await invoke('check_python_backend_status')
-        if (!isMounted) return
-        setBackendStatus('connected')
-        return
-      } catch (error) {
-        console.info('Backend not running, attempting to start it.', error)
-      }
-
-      try {
-        await invoke('start_python_backend')
-        if (!isMounted) return
-        setBackendStatus('connected')
-      } catch (error) {
-        console.error('Failed to start Python backend:', error)
-        if (!isMounted) return
-        setBackendStatus('disconnected')
-      }
-    }
-
-    ensureBackendRunning()
-
-    return () => {
-      isMounted = false
+  const stopStatusPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current)
+      pollingRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    return () => {
+      stopStatusPolling()
+    }
+  }, [stopStatusPolling])
+
+  const wait = useCallback((ms: number) => new Promise(resolve => setTimeout(resolve, ms)), [])
+
+  const waitForBackendHealth = useCallback(async (retries = 10, delayMs = 500) => {
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const response = await fetch(`${BACKEND_BASE_URL}/health`)
+        if (response.ok) {
+          return
+        }
+      } catch (error) {
+        // Ignore errors until retries are exhausted
+      }
+      await wait(delayMs)
+    }
+    throw new Error('Backend health check timed out')
+  }, [wait])
+
+  const ensureBackendAvailable = useCallback(async () => {
+    if (backendStatus === 'connected') {
+      try {
+        await waitForBackendHealth()
+        return
+      } catch (error) {
+        console.warn('Backend health check failed; attempting restart.', error)
+      }
+    }
+
+    setBackendStatus('connecting')
+
+    try {
+      await invoke('check_python_backend_status')
+    } catch (statusError) {
+      console.info('Backend not running, attempting to start it.', statusError)
+      await invoke('start_python_backend')
+    }
+
+    try {
+      await waitForBackendHealth()
+      setBackendStatus('connected')
+    } catch (error) {
+      console.error('Failed to connect to backend:', error)
+      setBackendStatus('disconnected')
+      throw error
+    }
+  }, [backendStatus, waitForBackendHealth])
+
+  const startStatusPolling = useCallback((taskId: string) => {
+    stopStatusPolling()
+
+    const fetchStatus = async () => {
+      try {
+        const response = await fetch(`${BACKEND_BASE_URL}/status/${taskId}`)
+
+        if (response.status === 404) {
+          return
+        }
+
+        if (!response.ok) {
+          throw new Error(`Status check failed (${response.status})`)
+        }
+
+        const payload: SeparationStatusPayload = await response.json()
+        const updates = adaptSeparationStatus(payload)
+
+        setCurrentTask(prev => {
+          if (!prev) return prev
+
+          const updatedTask: SeparationTask = {
+            ...prev,
+            ...updates,
+            outputFiles: updates.outputFiles ?? prev.outputFiles
+          }
+
+          if ((payload.status === 'completed' || payload.status === 'error') && !prev.endTime) {
+            updatedTask.endTime = new Date()
+          }
+
+          return updatedTask
+        })
+
+        if (payload.status === 'completed' || payload.status === 'error') {
+          stopStatusPolling()
+          setIsProcessing(false)
+        }
+      } catch (error) {
+        console.error('Error polling task status:', error)
+      }
+    }
+
+    fetchStatus()
+    pollingRef.current = setInterval(fetchStatus, 1000)
+  }, [stopStatusPolling])
+
+  useEffect(() => {
+    ensureBackendAvailable().catch(error => {
+      console.error('Failed to initialize backend:', error)
+    })
+  }, [ensureBackendAvailable])
 
   const handleFileSelect = (file: AudioFile) => {
     setSelectedFile(file)
@@ -103,36 +187,73 @@ function App() {
   const handleStartSeparation = async () => {
     if (!selectedFile || !outputDir) return
 
+    stopStatusPolling()
     setIsProcessing(true)
+
+    const initialTaskId = `task_${Date.now()}`
+    const startTimestamp = new Date()
     setCurrentTask({
-      id: `task_${Date.now()}`,
-      status: 'pending',
+      id: initialTaskId,
+      status: 'processing',
       progress: 0,
       inputFile: selectedFile,
       outputDir,
       stems: selectedStems,
-      currentStep: 'Initializing separator...'
+      currentStep: 'Initializing separator...',
+      outputFiles: [],
+      startTime: startTimestamp
     })
 
     try {
-      // Start the Python backend if not already running
-      if (backendStatus !== 'connected') {
-        await invoke('start_python_backend')
-        setBackendStatus('connected')
+      await ensureBackendAvailable()
+
+      const response = await fetch(`${BACKEND_BASE_URL}/separate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          input_path: selectedFile.path,
+          output_dir: outputDir,
+          stems: selectedStems
+        })
+      })
+
+      if (!response.ok) {
+        const message = await response.text()
+        throw new Error(message || 'Failed to start separation task')
       }
 
-      // TODO: Implement actual separation logic
-      console.log('Starting separation:', { selectedFile, outputDir, selectedStems })
+      const result = await response.json() as { success: boolean; task_id?: string; message?: string }
+
+      if (!result.success) {
+        throw new Error(result.message || 'Separation task failed to start')
+      }
+
+      const taskId = result.task_id ?? initialTaskId
+
+      setCurrentTask(prev => prev ? {
+        ...prev,
+        id: taskId,
+        status: 'processing',
+        currentStep: 'Separating audio tracks...'
+      } : prev)
+
+      startStatusPolling(taskId)
 
     } catch (error) {
       console.error('Separation failed:', error)
+      stopStatusPolling()
       setCurrentTask(prev => prev ? {
         ...prev,
         status: 'error',
-        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+        currentStep: 'Failed to start separation',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        endTime: new Date()
       } : null)
-    } finally {
       setIsProcessing(false)
+    } finally {
+      // Keep processing flag active until polling reports completion or error
     }
   }
 
