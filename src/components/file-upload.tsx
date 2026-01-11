@@ -2,6 +2,8 @@ import { useCallback } from 'react'
 import { Button } from './ui/button'
 import { Card, CardContent } from './ui/card'
 import { AudioFile } from '../App'
+import { open } from '@tauri-apps/api/dialog'
+import { invoke } from '@tauri-apps/api/tauri'
 
 interface FileUploadProps {
   onFileSelect: (file: AudioFile) => void
@@ -14,15 +16,38 @@ export function FileUpload({ onFileSelect, selectedFile, disabled }: FileUploadP
     if (disabled) return
 
     try {
-      // For now, create a demo file
-      // In a real implementation, this would use Tauri's file dialog
-      const demoFile: AudioFile = {
-        name: 'demo-song.mp3',
-        path: '/demo/path/demo-song.mp3',
-        size: 5242880, // 5MB
-        duration: 180 // 3 minutes
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: 'Audio Files',
+            extensions: ['mp3', 'wav', 'flac', 'm4a', 'ogg']
+          }
+        ]
+      })
+
+      if (!selected || Array.isArray(selected)) {
+        return
       }
-      onFileSelect(demoFile)
+
+      let size = 0
+
+      try {
+        const result = await invoke<{ size: number }>('get_file_metadata', { path: selected })
+        if (typeof result.size === 'number' && Number.isFinite(result.size)) {
+          size = result.size
+        }
+      } catch (metadataError) {
+        console.warn('Could not read file metadata, using fallback size.', metadataError)
+      }
+
+      const audioFile: AudioFile = {
+        name: selected.split(/[\\/]/).pop() ?? 'Unknown file',
+        path: selected,
+        size
+      }
+
+      onFileSelect(audioFile)
     } catch (error) {
       console.error('Error selecting file:', error)
     }

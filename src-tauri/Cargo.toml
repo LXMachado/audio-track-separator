@@ -19,7 +19,7 @@ path = "src/main.rs"
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.7", features = [ "fs-read-dir", "dialog-confirm", "dialog-ask", "dialog-open", "fs-exists", "fs-rename-file", "dialog-message", "fs-remove-file", "fs-write-file", "fs-create-dir", "fs-remove-dir", "fs-read-file", "fs-copy-file", "dialog-save", "shell-open", "dialog"] }
+tauri = { version = "1.7", features = [ "fs-read-dir", "dialog-confirm", "dialog-ask", "dialog-open", "fs-exists", "fs-rename-file", "dialog-message", "fs-remove-file", "fs-write-file", "fs-create-dir", "fs-remove-dir", "fs-read-file", "fs-copy-file", "dialog-save", "shell-open", "dialog", "protocol-asset"] }
 
 [features]
 custom-protocol = [ "tauri/custom-protocol" ]

@@ -3,14 +3,17 @@
     windows_subsystem = "windows"
 )]
 
+use serde::Serialize;
 use std::process::Command;
+use std::fs;
 
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             start_python_backend,
             check_python_backend_status,
-            get_app_version
+            get_app_version,
+            get_file_metadata
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -85,4 +88,19 @@ async fn check_python_backend_status() -> Result<String, String> {
 #[tauri::command]
 fn get_app_version() -> Result<String, String> {
     Ok("1.0.0".to_string())
+}
+
+#[derive(Serialize)]
+struct FileMetadataResponse {
+    size: u64,
+}
+
+#[tauri::command]
+fn get_file_metadata(path: String) -> Result<FileMetadataResponse, String> {
+    let metadata = fs::metadata(&path)
+        .map_err(|e| format!("Failed to read file metadata: {}", e))?;
+
+    Ok(FileMetadataResponse {
+        size: metadata.len(),
+    })
 }

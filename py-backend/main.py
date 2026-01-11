@@ -33,6 +33,7 @@ class SeparationStatus(BaseModel):
     current_step: str
     eta_seconds: Optional[int] = None
     error_message: Optional[str] = None
+    output_files: Optional[List[str]] = None
 
 class SeparationResult(BaseModel):
     success: bool
@@ -119,45 +120,24 @@ async def separate_audio_task(
             HAS_SPLEETER = False
 
         if not HAS_SPLEETER:
-            # Simulate processing for demo purposes
-            separation_status[task_id] = SeparationStatus(
-                status="processing",
-                progress=0.2,
-                current_step="Simulating audio separation (Spleeter not installed)..."
+            error_message = (
+                "Spleeter is not installed. Install the Python backend dependencies "
+                "with `pip install -r py-backend/requirements.txt` and ensure FFmpeg is available."
             )
 
-            # Simulate processing time
-            await asyncio.sleep(2)
-
             separation_status[task_id] = SeparationStatus(
-                status="processing",
-                progress=0.8,
-                current_step="Creating demo output files..."
-            )
-
-            # Create output directory
-            output_path = Path(output_dir)
-            output_path.mkdir(parents=True, exist_ok=True)
-
-            # Create demo output files
-            output_files = []
-            audio_filename = Path(input_path).stem
-
-            for i in range(stems):
-                demo_file = output_path / f"{audio_filename}_stem_{i+1}.wav"
-                demo_file.write_text(f"Demo stem {i+1} for {audio_filename}")
-                output_files.append(str(demo_file))
-
-            separation_status[task_id] = SeparationStatus(
-                status="completed",
-                progress=1.0,
-                current_step="Demo separation completed!"
+                status="error",
+                progress=0.0,
+                current_step="Spleeter dependencies missing",
+                error_message=error_message,
+                output_files=[]
             )
 
             return SeparationResult(
-                success=True,
-                output_files=output_files,
-                processing_time=2.0
+                success=False,
+                output_files=[],
+                processing_time=0.0,
+                error_message=error_message
             )
 
         # Initialize separator based on stem count
@@ -233,7 +213,8 @@ async def separate_audio_task(
             separation_status[task_id] = SeparationStatus(
                 status="completed",
                 progress=1.0,
-                current_step="Separation completed!"
+                current_step="Separation completed!",
+                output_files=output_files
             )
 
             return SeparationResult(
@@ -248,7 +229,8 @@ async def separate_audio_task(
             status="error",
             progress=0.0,
             current_step="Error occurred",
-            error_message=error_message
+            error_message=error_message,
+            output_files=[]
         )
 
         return SeparationResult(
@@ -296,6 +278,12 @@ async def separate_audio(request: SeparationRequest, background_tasks: Backgroun
 
     # Create task ID
     task_id = f"sep_{int(datetime.now().timestamp())}_{os.path.basename(request.input_path)}"
+
+    separation_status[task_id] = SeparationStatus(
+        status="processing",
+        progress=0.0,
+        current_step="Task queued..."
+    )
 
     # Start background task
     background_tasks.add_task(

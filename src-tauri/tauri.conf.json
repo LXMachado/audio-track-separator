@@ -36,6 +36,10 @@
         "removeFile": true,
         "renameFile": true,
         "exists": true
+      },
+      "protocol": {
+        "asset": true,
+        "assetScope": ["**"]
       }
     },
     "windows": [

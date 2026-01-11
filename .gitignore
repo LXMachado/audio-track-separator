@@ -8,34 +8,48 @@ dist/
 build/
 .next/
 
-# Environment variables
+# Environment variables and secrets
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+*.key
+*.pem
+secrets/
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+logs/
+*.log
 
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
+*.swn
 
 # OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Rust/Tauri specific
 src-tauri/target/
 src-tauri/Cargo.lock
+src-tauri/src-tauri.conf.json.backup
 
 # Python
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyc
 *.pyo
 *.pyd
@@ -43,21 +57,101 @@ __pycache__/
 env/
 venv/
 .venv/
+venv*/
+.env*/
+.env.*/
 pip-log.txt
 pip-delete-this-directory.txt
 .tox/
 .coverage
 .coverage.*
 .cache
+.pytest_cache/
 nosetests.xml
 coverage.xml
 *.cover
 *.log
 .git
-.mypy_cache
-.pytest_cache
-.hypothesis
+.mypy_cache/
+.hypothesis/
+*.egg-info/
+dist/
+build/
 
-# Temporary files
-*.tmp
+# Docker related
+docker-compose.override.yml
+.docker/
+
+# Audio files (should not be committed)
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.aac
+*.ogg
+*.wma
+*.aiff
+test_audio.wav
+output_test/
+separated_audio/
+audio_output/
+
+# Model files (can be large)
+models/
+spleeter_models/
+*.model
+
+# Test files and temporary audio
+test_files/
+temp_audio/
 *.temp
+*.tmp
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache directories
+.cache/
+.cache
+.npm/
+.eslintcache
+.parcel-cache/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# MacOS
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Windows
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.nfs*
+
+# Various
+*.orig
+*.bak
+*.backup
+*~
+.nyc_output/

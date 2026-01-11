@@ -1,0 +1,16 @@
+services:
+  backend:
+    build:
+      context: ./py-backend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    volumes:
+      # Mount test audio files and output directory
+      - ./test_audio.wav:/app/test_audio.wav
+      - ./output_test:/app/output_test
+    environment:
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    # Allow the container to run the uvicorn server on all interfaces
+    command: ["python", "-c", "import uvicorn; uvicorn.run('main:app', host='0.0.0.0', port=8081, log_level='info')"]
