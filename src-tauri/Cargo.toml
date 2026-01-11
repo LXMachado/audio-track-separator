@@ -23,3 +23,6 @@ tauri = { version = "1.7", features = [ "fs-read-dir", "dialog-confirm", "dialog
 
 [features]
 custom-protocol = [ "tauri/custom-protocol" ]
+
+[patch.crates-io]
+glib = { path = "vendor/glib-0.15.12" }
