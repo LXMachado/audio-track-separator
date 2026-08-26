@@ -23,7 +23,7 @@ tauri = { version = "1.7", features = [ "fs-read-dir", "dialog-confirm", "dialog
 # Security floors for transitive Tauri dependencies. Keep these direct requirements
 # until all upstream constraints guarantee patched releases.
 bytes = "=1.11.1"
-rand = "=0.10.2"
+rand = "=0.8.7"
 serde_with = "=3.21.0"
 tar = "=0.4.46"
 time = "=0.3.47"
